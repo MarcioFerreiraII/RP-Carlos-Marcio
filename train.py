@@ -3,33 +3,9 @@ from sklearn import tree
 from sklearn.model_selection import train_test_split
 import sklearn as sk
 import pandas as pd
-
-#Imprime o "codigo" da arvore de decisao
-def get_code(tree, feature_names):
-        left      = tree.tree_.children_left
-        right     = tree.tree_.children_right
-        threshold = tree.tree_.threshold
-        features  = [feature_names[i] for i in tree.tree_.feature]
-        value = tree.tree_.value
-
-        def recurse(left, right, threshold, features, node, cont):
-            if (threshold[node] != -2):
-                cont += 3
-                print (' '*cont, 'if ( ' + features[node] + ' <= ' + str(threshold[node]) + ' )')
-                if left[node] != -1:
-                    cont = recurse (left, right, threshold, features, left[node], cont)
-                print(' ' * cont, '} else {')
-                if right[node] != -1:
-                    cont = recurse (left, right, threshold, features, right[node], cont)
-                print(' ' * cont, '}')
-                cont -= 3
-            else:
-                cont += 3
-                print(' ' * cont, 'return ' + str(value[node]))
-                cont -= 3
-            return cont
-
-        recurse(left, right, threshold, features, 0, 0)
+import graphviz
+import os
+os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 #Aberttua do arquivo contendo a base de dados
 arq = open('dados.base', 'r') #Dados.base é minha base de dados
@@ -67,7 +43,7 @@ Y = tabela.iloc[:,-1]
 X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2) 
 
 #Treina a arvore
-clf_entropy = sk.tree.DecisionTreeClassifier(criterion = 'entropy', min_samples_leaf = 5)
+clf_entropy = sk.tree.DecisionTreeClassifier(criterion = 'entropy')
 clf_entropy.fit(X_train, y_train)
 
 predicao = clf_entropy.predict(X_test) #Testa
@@ -80,4 +56,9 @@ for i in range(len(predicao)):
             print(X_test.columns[j], ' ', end = '')
     print('\nPredicao:', predicao[i],'Correto:', y_test.iloc[i])
 
-get_code(clf_entropy, tabela.columns)
+print('Precisao:', str(sk.metrics.accuracy_score(y_test, predicao) * 100) + '%')
+
+#Cria arquivo em pdf da arvore de decisao
+dot_data = tree.export_graphviz(clf_entropy, out_file = None, feature_names = X.columns, class_names = clf_entropy.classes_, filled = True, rounded = False, special_characters = True) 
+graph = graphviz.Source(dot_data) 
+graph.render('grafico') 
