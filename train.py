@@ -4,6 +4,33 @@ from sklearn.model_selection import train_test_split
 import sklearn as sk
 import pandas as pd
 
+#Imprime o "codigo" da arvore de decisao
+def get_code(tree, feature_names):
+        left      = tree.tree_.children_left
+        right     = tree.tree_.children_right
+        threshold = tree.tree_.threshold
+        features  = [feature_names[i] for i in tree.tree_.feature]
+        value = tree.tree_.value
+
+        def recurse(left, right, threshold, features, node, cont):
+            if (threshold[node] != -2):
+                cont += 3
+                print (' '*cont, 'if ( ' + features[node] + ' <= ' + str(threshold[node]) + ' )')
+                if left[node] != -1:
+                    cont = recurse (left, right, threshold, features, left[node], cont)
+                print(' ' * cont, '} else {')
+                if right[node] != -1:
+                    cont = recurse (left, right, threshold, features, right[node], cont)
+                print(' ' * cont, '}')
+                cont -= 3
+            else:
+                cont += 3
+                print(' ' * cont, 'return ' + str(value[node]))
+                cont -= 3
+            return cont
+
+        recurse(left, right, threshold, features, 0, 0)
+
 #Aberttua do arquivo contendo a base de dados
 arq = open('dados.base', 'r') #Dados.base é minha base de dados
 listaDeDados = []
@@ -11,7 +38,9 @@ tabela = pd.DataFrame()
 for linha in arq:
     retiraTabulacao = linha.split('\t')
     for char in retiraTabulacao[0]: #Percorre a frase da linha especifica
-        if char in '.,():;?!': #Verifica se ha algum simbolo especial...
+        if 65 <= ord(char) <= 90: #Verifica se ha algum caractere maiusculo...
+            retiraTabulacao[0] = retiraTabulacao[0].replace(char, chr(ord(char) + 32)) #...e o transforma em minusculo
+        elif char in '.,():;?!': #Verifica se ha algum simbolo especial...
             retiraTabulacao[0] = retiraTabulacao[0].replace(char, '') #...e o retira
     retiraTabulacao[0] = retiraTabulacao[0].split() #Transforma a frase em um array de palavras
     xFx = [retiraTabulacao[0], retiraTabulacao[1]]
@@ -43,9 +72,12 @@ clf_entropy.fit(X_train, y_train)
 
 predicao = clf_entropy.predict(X_test) #Testa
 
+#imprime o resultado do teste
 for i in range(len(predicao)):
     print('\n\nFrase:')
     for j in range(len(X_test.columns)):
         if X_test.iloc[i, j] == 1:
             print(X_test.columns[j], ' ', end = '')
     print('\nPredicao:', predicao[i],'Correto:', y_test.iloc[i])
+
+get_code(clf_entropy, tabela.columns)
