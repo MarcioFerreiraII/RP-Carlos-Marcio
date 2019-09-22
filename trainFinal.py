@@ -1,6 +1,4 @@
 from sklearn import tree
-from sklearn.model_selection import train_test_split
-import sklearn as sk
 import pandas as pd
 from sklearn import naive_bayes as nb
 from sklearn.model_selection import KFold
@@ -11,7 +9,7 @@ arq = open('novaBase.base', encoding="utf8") #Dados.base é minha base de dados
 tabela = pd.DataFrame()
 classe = []
 for linha in arq:
-    linha.strip('\n')
+    linha = linha.strip('\n')
     retiraTabulacao = linha.split('\t')
     classe.append(retiraTabulacao[1])
     retiraTabulacao[0] = retiraTabulacao[0].split() #Transforma a frase em um array de palavras
@@ -34,7 +32,7 @@ for linha in arq:
 
 arq.close()
 tabela = tabela.fillna(0) #Valores nulos sao preenchidos com 0
-print(tabela)
+print(classe)
 
 #Treina os classificadores
 arvoreDecisao = tree.DecisionTreeClassifier(criterion = 'entropy')
@@ -97,4 +95,6 @@ if (np.mean(scoresBayes) > np.mean(scoresDT)):
     print(predictBayes)
 else:
     print(predictDT)
+
+print("Probabilidade a posteriori (Bayes) para a frase nova: ", bayes.predict_proba(novaFrase))
 
