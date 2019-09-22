@@ -3,18 +3,15 @@ from sklearn.model_selection import train_test_split
 import sklearn as sk
 import pandas as pd
 from sklearn import naive_bayes as nb
-#import graphviz
-#import os
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import KFold
 import numpy as np
-
-#os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 #Aberttua do arquivo contendo a base de dados
 arq = open('novaBase.base', encoding="utf8") #Dados.base é minha base de dados
 tabela = pd.DataFrame()
 classe = []
 for linha in arq:
+    linha.strip('\n')
     retiraTabulacao = linha.split('\t')
     classe.append(retiraTabulacao[1])
     retiraTabulacao[0] = retiraTabulacao[0].split() #Transforma a frase em um array de palavras
@@ -39,44 +36,43 @@ arq.close()
 tabela = tabela.fillna(0) #Valores nulos sao preenchidos com 0
 print(tabela)
 
-#Divide a tabela em treinamento e teste
-X_train, X_test, y_train, y_test = train_test_split(tabela, classe, test_size=0.2)
-
 #Treina os classificadores
 arvoreDecisao = tree.DecisionTreeClassifier(criterion = 'entropy')
-arvoreDecisao.fit(X_train, y_train)
 bayes = nb.MultinomialNB() #instancia o classificador Naive Bayess MULTINOMIAL
-bayes.fit(X_train, y_train)
 
-predicaoArvoreDecisao = arvoreDecisao.predict(X_test) #Testa
+#Validação cruzada, criando
+cv = KFold(n_splits=10, shuffle=True)
 
-predicaoBayes = bayes.predict(X_test)
-probabilidadesBayes = bayes.predict_proba(X_test)
+#Armazenamento dos scores
+scoresBayes = []
+scoresDT = []
 
-#Validação cruzada
-scoreDT = cross_val_score(arvoreDecisao, tabela, classe, cv=4)
+for train_index, test_index in cv.split(tabela, classe):
+    X_train, X_test = tabela.iloc[train_index], tabela.iloc[test_index] #Pegando as linhas para teste
+    y_train = []
+    y_test = []
+    #Pegando as labels reais
+    for i in range(len(train_index)):
+        y_trainTem = classe[train_index[i]]
+        y_train.append(y_trainTem)
+    for i in range(len(test_index)):
+        y_testTem = classe[test_index[i]]
+        y_test.append(y_testTem)
+    bayes.fit(X_train, y_train) #Treinando a arvore
+    arvoreDecisao.fit(X_train, y_train) #Treinando o Bayes
+    # Guardando os scores
+    scoresBayes.append(bayes.score(X_test, y_test))
+    scoresDT.append(arvoreDecisao.score(X_test, y_test))
 
-scoreNB = cross_val_score(bayes, tabela, classe, cv=4)
-'''
-#imprime o resultado do teste
-for i in range(len(predicaoArvoreDecisao)):
-    print('\nFrase:')
-    for j in range(len(X_test.columns)):
-        if X_test.iloc[i, j] == 1:
-            print(X_test.columns[j], ' ')
-    print('\nPredicao Arvore de decisao:', predicaoArvoreDecisao[i])
-    print('Predicao NaiveBayes:', predicaoBayes[i])
-    print('Correto:', y_test[i])
-'''
-print('\nPrecisao Arvore de decisao:', str(sk.metrics.accuracy_score(y_test, predicaoArvoreDecisao) * 100) + '%')
-print('Precisao Naive Bayes:', str(sk.metrics.accuracy_score(y_test, predicaoBayes) * 100) + '%')
+print("Precisões do Naive Bayes:", scoresBayes)
+print("Precisões da Arvore de Decisoes:", scoresDT)
 
 #Imprime a media, o desvio padrao e a accuracia do teste de validaçao cruzada
-print("\nMedia Arvore de Decisao (Validacao Cruzada):", np.mean(scoreDT))
-print("Media Arvore de Decisao (Validacao Cruzada):", np.std(scoreDT))
+print("\nMedia Arvore de Decisao (Validacao Cruzada):", np.mean(scoresDT))
+print("Desvio padrão Arvore de Decisao (Validacao Cruzada):", np.std(scoresDT))
 
-print("\nMedia Naive Bayes (Validacao Cruzada):", np.mean(scoreNB))
-print("Media Naive Bayes (Validacao Cruzada):", np.std(scoreNB))
+print("\nMedia Naive Bayes (Validacao Cruzada):", np.mean(scoresBayes))
+print("Desvio padrão Naive Bayes (Validacao Cruzada):", np.std(scoresBayes))
 
 #Testa uma frase
 print("\nDigite uma frase: ")
@@ -94,10 +90,11 @@ for k in range(len(frase)):
         dici[palavra] = 1
 novaFrase = novaFrase.append(dici, ignore_index = True)
 novaFrase = novaFrase.fillna(0)  #Valores nulos sao preenchidos com 0
-predict = bayes.predict(novaFrase)
-print(predict)
+predictBayes = bayes.predict(novaFrase)
+predictDT = arvoreDecisao.predict(novaFrase)
 
-#Cria arquivo em pdf da arvore de decisao
-#dot_data = tree.export_graphviz(arvoreDecisao, out_file = None, feature_names = tabela.columns, class_names = arvoreDecisao.classes_, filled = True, rounded = True, special_characters = True)
-#graph = graphviz.Source(dot_data)
-#graph.render('grafico')
+if (np.mean(scoresBayes) > np.mean(scoresDT)):
+    print(predictBayes)
+else:
+    print(predictDT)
+
