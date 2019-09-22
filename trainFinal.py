@@ -28,6 +28,8 @@ for linha in arq:
                 palavra = palavra.replace(char, chr(ord(char) + 32)) #...e o transforma em minusculo
         if len(palavra) < 3: #Ignora palavra com menos de 3 caracteres
             continue
+        if len(palavra) < 3:
+            continue
         if palavra not in tabela.columns: #Caso nao exista uma coluna para a palavra...
             tabela[palavra] = [0 for i in range(len(tabela))] #...eh criada uma nova
         dici[palavra] = 1 #E entao seu valor eh 1
