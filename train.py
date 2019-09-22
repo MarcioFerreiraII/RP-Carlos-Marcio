@@ -9,7 +9,6 @@ os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 #Aberttua do arquivo contendo a base de dados
 arq = open('novaBase.base', encoding="utf8") #Dados.base é minha base de dados
-listaDeDados = []
 tabela = pd.DataFrame()
 classe = []
 for linha in arq:
